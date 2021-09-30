@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -15,26 +14,20 @@ contract VaultCakeToCake is VaultController, IStrategy {
     using SafeBEP20 for IBEP20;
     using SafeMath for uint256;
 
-    /* ========== CONSTANTS ============= */
-
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     IBEP20 private constant CAKE = IBEP20(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
     IMasterChef private constant CAKE_MASTER_CHEF = IMasterChef(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
     IPancakeRouter02 private constant ROUTER = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
 
-    /* ========== STATE VARIABLES ========== */
-
     uint public constant override pid = 0;
     PoolConstant.PoolTypes public constant override poolType = PoolConstant.PoolTypes.CakeStake;
-	
-	uint private constant DUST = 1000;
+
+    uint private constant DUST = 1000;
 
     uint public totalShares;
     mapping (address => uint) private _shares;
     mapping (address => uint) private _principal;
     mapping (address => uint) private _depositedAt;
-
-    /* ========== INITIALIZER ========== */
 
     function initialize() external initializer {
         __VaultController_init(CAKE);
@@ -42,8 +35,6 @@ contract VaultCakeToCake is VaultController, IStrategy {
 
         setMinter(0xC7EBF06A6188040B45fe95112Ff5557c36Ded7c0); // require mainnet
     }
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     function balance() override public view returns (uint) {
         (uint amount,) = CAKE_MASTER_CHEF.userInfo(pid, address(this));
@@ -87,8 +78,6 @@ contract VaultCakeToCake is VaultController, IStrategy {
     function rewardsToken() external view override returns (address) {
         return address(_stakingToken);
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function deposit(uint _amount) public override {
         _deposit(_amount, msg.sender);
@@ -150,7 +139,6 @@ contract VaultCakeToCake is VaultController, IStrategy {
         _harvest(cakeHarvested);
     }
     
-    // @dev underlying only + withdrawal fee + no perf fee
     function withdrawUnderlying(uint _amount) external {
         uint amount = Math.min(_amount, _principal[msg.sender]);
         uint shares = Math.min(amount.mul(totalShares).div(balance()), _shares[msg.sender]);
@@ -192,8 +180,6 @@ contract VaultCakeToCake is VaultController, IStrategy {
 
         _harvest(cakeHarvested);
     }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
 
     function _depositStakingToken(uint amount) private returns(uint cakeHarvested) {
         uint before = CAKE.balanceOf(address(this));
@@ -241,9 +227,6 @@ contract VaultCakeToCake is VaultController, IStrategy {
         }
     }
 
-    /* ========== SALVAGE PURPOSE ONLY ========== */
-
-    // @dev _stakingToken(CAKE) must not remain balance in this contract. So dev should be able to salvage staking token transferred by mistake.
     function recoverToken(address _token, uint amount) virtual external override onlyOwner {
         IBEP20(_token).safeTransfer(owner(), amount);
 
