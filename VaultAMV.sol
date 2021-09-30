@@ -19,26 +19,18 @@ contract VaultAMV is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradeabl
     using SafeMath for uint;
     using SafeBEP20 for IBEP20;
 
-    /* ========== CONSTANTS ============= */
-
     address private constant AMV = 0x4b6BE454C48d24144CBaa581A8eBC86F64139580;
     PoolConstant.PoolTypes public constant override poolType = PoolConstant.PoolTypes.AMVStake;
-
-    /* ========== STATE VARIABLES ========== */
 
     uint public override pid;
     uint private _totalSupply;
     mapping(address => uint) private _balances;
     mapping(address => uint) private _depositedAt;
 
-    /* ========== INITIALIZER ========== */
-
     function initialize() external initializer {
         __VaultController_init(IBEP20(AMV));
         __ReentrancyGuard_init();
     }
-
-    /* ========== VIEWS ========== */
 
     function totalSupply() external view override returns (uint) {
         return _totalSupply;
@@ -79,8 +71,6 @@ contract VaultAMV is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradeabl
     function earned(address) override public view returns (uint) {
         return 0;
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function deposit(uint amount) override public {
         _deposit(amount, msg.sender);
@@ -127,8 +117,6 @@ contract VaultAMV is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradeabl
     function harvest() public override {
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
-
     function setMinter(address _minter) public override onlyOwner {
         VaultAMVController.setMinter(_minter);
     }
@@ -137,8 +125,6 @@ contract VaultAMV is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradeabl
         require(address(_amvChef) == address(0), "VaultAMV: setAMVChef only once");
         VaultAMVController.setAMVChef(IAMVChef(_chef));
     }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
 
     function _deposit(uint amount, address _to) private nonReentrant notPaused {
         require(amount > 0, "VaultBunny: amount must be greater than zero");
@@ -150,8 +136,6 @@ contract VaultAMV is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradeabl
         _amvChef.notifyDeposited(msg.sender, amount);
         emit Deposited(_to, amount);
     }
-
-    /* ========== SALVAGE PURPOSE ONLY ========== */
 
     function recoverToken(address tokenAddress, uint tokenAmount) external override onlyOwner {
         require(tokenAddress != address(_stakingToken), "VaultBunny: cannot recover underlying token");
