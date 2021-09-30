@@ -12,16 +12,11 @@ import "../interfaces/IAMVChef.sol";
 import "../interfaces/IAMVStrategy.sol";
 import "./AMVToken.sol";
 
-
 contract AMVChef is IAMVChef, OwnableUpgradeable {
     using SafeMath for uint;
     using SafeBEP20 for IBEP20;
 
-    /* ========== CONSTANTS ============= */
-
     AMVToken public constant AMV = AMVToken(0x76383afd3C3501C2b0f5B4450E819eD430Ce4de0);
-
-    /* ========== STATE VARIABLES ========== */
 
     address[] private _vaultList;
     mapping(address => VaultInfo) vaults;
@@ -32,8 +27,6 @@ contract AMVChef is IAMVChef, OwnableUpgradeable {
     uint public startBlock;
     uint public override amvPerBlock;
     uint public override totalAllocPoint;
-
-    /* ========== MODIFIERS ========== */
 
     modifier onlyVaults {
         require(vaults[msg.sender].token != address(0), "AMVChef: caller is not on the vault");
@@ -54,13 +47,9 @@ contract AMVChef is IAMVChef, OwnableUpgradeable {
         _;
     }
 
-    /* ========== EVENTS ========== */
-
     event NotifyDeposited(address indexed user, address indexed vault, uint amount);
     event NotifyWithdrawn(address indexed user, address indexed vault, uint amount);
     event AMVRewardPaid(address indexed user, address indexed vault, uint amount);
-
-    /* ========== INITIALIZER ========== */
 
     function initialize(uint _startBlock, uint _AMVPerBlock) external initializer {
         __Ownable_init();
@@ -68,8 +57,6 @@ contract AMVChef is IAMVChef, OwnableUpgradeable {
         startBlock = _startBlock;
         amvPerBlock = _AMVPerBlock;
     }
-
-    /* ========== VIEWS ========== */
 
     function timeMultiplier(uint from, uint to) public pure returns (uint) {
         return to.sub(from);
@@ -101,8 +88,6 @@ contract AMVChef is IAMVChef, OwnableUpgradeable {
         return userInfo.pending.add(userInfo.balance.mul(accAMVPerShare).div(1e12).sub(userInfo.rewardPaid));
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
-
     function addVault(address vault, address token, uint allocPoint) public onlyOwner {
         require(vaults[vault].token == address(0), "AMVChef: vault is already set");
         bulkUpdateRewards();
@@ -133,8 +118,6 @@ contract AMVChef is IAMVChef, OwnableUpgradeable {
         bulkUpdateRewards();
         amvPerBlock = _AMVPerBlock;
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function notifyDeposited(address user, uint amount) external override onlyVaults updateRewards(msg.sender) {
         UserInfo storage userInfo = vaultUsers[msg.sender][user];
@@ -198,8 +181,6 @@ contract AMVChef is IAMVChef, OwnableUpgradeable {
 
     function updateRewardsOf(address vault) public updateRewards(vault) {
     }
-
-    /* ========== SALVAGE PURPOSE ONLY ========== */
 
     function recoverToken(address _token, uint amount) virtual external onlyOwner {
         require(_token != address(AMV), "AMVChef: cannot recover AMV token");
