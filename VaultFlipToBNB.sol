@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -20,16 +19,12 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
     using SafeMath for uint;
     using SafeBEP20 for IBEP20;
 
-    /* ========== CONSTANTS ============= */
-
     address private constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     
     IMasterChef private constant CAKE_MASTER_CHEF = IMasterChef(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
     IPancakeRouter02 private constant ROUTER = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     PoolConstant.PoolTypes public constant override poolType = PoolConstant.PoolTypes.FlipToBNB;
-
-    /* ========== STATE VARIABLES ========== */
 
     IStrategy private _rewardsToken;
 
@@ -48,8 +43,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
     uint public override pid;
     mapping (address => uint) private _depositedAt;
 
-    /* ========== MODIFIERS ========== */
-
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
@@ -60,12 +53,8 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
         _;
     }
 
-    /* ========== EVENTS ========== */
-
     event RewardAdded(uint reward);
     event RewardsDurationUpdated(uint newDuration);
-
-    /* ========== INITIALIZER ========== */
 
     function initialize(uint _pid) external initializer {
         (address _token,,,) = CAKE_MASTER_CHEF.poolInfo(_pid);
@@ -83,8 +72,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
         setMinter(0xC7EBF06A6188040B45fe95112Ff5557c36Ded7c0);  
         setRewardsToken(0xb8A475c0197b477bb1c41671ACA22986EA8765D2); 
     }
-
-    /* ========== VIEWS ========== */
 
     function balance() override external view returns (uint) {
         return _totalSupply;
@@ -140,8 +127,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
         return rewardRate.mul(rewardsDuration);
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
     function deposit(uint amount) override public {
         _deposit(amount, msg.sender);
     }
@@ -173,12 +158,11 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
     }
 
     function withdrawAll() external override {
-		getReward();
+	getReward();
         uint _withdraw = withdrawableBalanceOf(msg.sender);
         if (_withdraw > 0) {
             withdraw(_withdraw);
         }
-// 		getReward();
     }
 
     function getReward() public override nonReentrant updateReward(msg.sender) {
@@ -188,7 +172,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
         } else {
             reward = earned(msg.sender);
         }
-// 		reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
             uint before = IBEP20(CAKE).balanceOf(address(this));
@@ -203,7 +186,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
                 _minter.mintFor(CAKE, 0, performanceFee, msg.sender, _depositedAt[msg.sender]);
             }
 
-            // IBEP20(CAKE).safeTransfer(msg.sender, cakeBalance.sub(performanceFee));
             if (cakeBalance.sub(performanceFee) > 0) {
                 _swapTokenToToken(CAKE, cakeBalance.sub(performanceFee), WBNB);
             }
@@ -216,8 +198,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
         _harvest(cakeHarvested);
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
-
     function setMinter(address newMinter) override public onlyOwner {
         VaultController.setMinter(newMinter);
         if (newMinter != address(0)) {
@@ -228,7 +208,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
 
     function setRewardsToken(address newRewardsToken) public onlyOwner {
         require(address(_rewardsToken) == address(0), "VaultFlipToBNB: rewards token already set");
-
         _rewardsToken = IStrategy(newRewardsToken);
         IBEP20(CAKE).safeApprove(newRewardsToken, 0);
         IBEP20(CAKE).safeApprove(newRewardsToken, uint(- 1));
@@ -243,8 +222,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
         rewardsDuration = _rewardsDuration;
         emit RewardsDurationUpdated(rewardsDuration);
     }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
     
     function _approveTokenIfNeeded(address token) private {
         if (IBEP20(token).allowance(address(this), address(ROUTER)) == 0) {
@@ -253,19 +230,16 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
     }
     
     function _swapTokenToToken(address _from, uint amount, address _to) private returns (uint) {
-        
         require(amount > 0, "VaultFlipToBNB: amount must be greater than zero");
         _approveTokenIfNeeded(_from);
         
         address[] memory path;
         
         if (_from == WBNB || _to == WBNB) {
-            // [WBNB, AMV] or [AMV, WBNB]
             path = new address[](2);
             path[0] = _from;
             path[1] = _to;
         } else {
-            // [USDT, AMV] or [AMV, USDT]
             path = new address[](3);
             path[0] = _from;
             path[1] = WBNB;
@@ -319,10 +293,6 @@ contract VaultFlipToBNB is VaultController, IStrategy, RewardsDistributionRecipi
             rewardRate = reward.add(leftover).div(rewardsDuration);
         }
 
-        // Ensure the provided reward amount is not more than the balance in the contract.
-        // This keeps the reward rate in the right range, preventing overflows due to
-        // very high values of rewardRate in the earned and rewardsPerToken functions;
-        // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint _balance = _rewardsToken.sharesOf(address(this));
         require(rewardRate <= _balance.div(rewardsDuration), "VaultFlipToBNB: reward rate must be in the right range");
 
