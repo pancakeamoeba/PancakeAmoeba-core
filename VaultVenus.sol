@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -22,8 +21,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
     using SafeMath for uint;
     using SafeToken for address;
 
-    /* ========== CONSTANTS ============= */
-
     uint public constant override pid = 9999;
     PoolConstant.PoolTypes public constant override poolType = PoolConstant.PoolTypes.Venus;
 
@@ -42,8 +39,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
 
 
     uint private constant VENUS_EXIT_BASE = 10000;
-
-    /* ========== STATE VARIABLES ========== */
 
     IVToken public vToken;
     IVaultVenusBridge public venusBridge;
@@ -70,13 +65,9 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
     uint public venusExitRatio;
     uint public collateralRatioSystem;
 
-    /* ========== EVENTS ========== */
-
     event CollateralFactorsUpdated(uint collateralRatioFactor, uint collateralDepth);
     event DebtAdded(address bank, uint amount);
     event DebtRemoved(address bank, uint amount);
-
-    /* ========== INITIALIZER ========== */
 
     receive() external payable {}
 
@@ -104,8 +95,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
         setAMVChef(AMV_CHEF);
         setSafeVenus(0x4aa7FAFe0991DBd30Cc5023cc284EFf6B6482a71);
     }
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     function totalSupply() external view override returns (uint) {
         return totalShares;
@@ -167,8 +156,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
         liquidity = balance();
         utilized = balance().sub(balanceReserved());
     }
-
-    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function setVenusBridge(address payable newBridge) public payable onlyOwner {
         require(newBridge != address(0), "VenusVault: bridge must be non-zero address");
@@ -267,8 +254,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
             venusBridge.deposit(address(this), migrationCost);
         }
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function updateVenusFactors() public {
         (venusBorrow, venusSupply) = safeVenus.venusBorrowAndSupply(address(this));
@@ -444,7 +429,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
         totalShares = totalShares.sub(shares);
         _shares[msg.sender] = _shares[msg.sender].sub(shares);
 
-        // cleanup dust
         if (_shares[msg.sender] > 0 && _shares[msg.sender] < DUST) {
             if (address(_amvChef) != address(0)) {
                 _amvChef.notifyWithdrawn(msg.sender, _shares[msg.sender]);
@@ -477,8 +461,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
         VENUS_BRIDGE_OWNER.harvestBehalf(address(this));
         _increaseCollateral(3);
     }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
 
     function _getBufferedAmountMin(uint amount) private view returns (uint) {
         return venusExitRatio > 0 ? amount.mul(1005).div(1000) : amount;
@@ -552,8 +534,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
             }
         }
     }
-
-    /* ========== SALVAGE PURPOSE ONLY ========== */
 
     function recoverToken(address tokenAddress, uint tokenAmount) external override onlyOwner {
         require(tokenAddress != address(0) && tokenAddress != address(_stakingToken) &&
