@@ -36,8 +36,6 @@ contract VaultVenus is VaultAMVController, IAMVStrategy, ReentrancyGuardUpgradea
     uint private constant COLLATERAL_RATIO_EMERGENCY = 998;
     uint private constant COLLATERAL_RATIO_SYSTEM_DEFAULT = 6e17;
     uint private constant DUST = 1000;
-
-
     uint private constant VENUS_EXIT_BASE = 10000;
 
     IVToken public vToken;
