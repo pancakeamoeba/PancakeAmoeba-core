@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -18,15 +17,13 @@ import {PoolConstant} from "../library/PoolConstant.sol";
 contract VaultFlipToFlip is VaultController, IStrategy {
     using SafeBEP20 for IBEP20;
     using SafeMath for uint256;
-
-    /* ========== CONSTANTS ============= */
  
     IBEP20 private constant CAKE = IBEP20(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
     IBEP20 private constant WBNB = IBEP20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     IMasterChef private constant CAKE_MASTER_CHEF = IMasterChef(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
     PoolConstant.PoolTypes public constant override poolType = PoolConstant.PoolTypes.FlipToFlip;
 	
-	ZapBSC public constant zapBSC = ZapBSC(0xe675EcF46970783607115b2eC9BFe58a2DB4FB73);
+    ZapBSC public constant zapBSC = ZapBSC(0xe675EcF46970783607115b2eC9BFe58a2DB4FB73);
 
     IPancakeRouter02 private constant ROUTER_V1 = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     IPancakeRouter02 private constant ROUTER_V2 = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
@@ -34,8 +31,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
     IPancakeFactory private constant FACTORY_V1 = IPancakeFactory(0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73);
 
     uint private constant DUST = 1000;
-
-    /* ========== STATE VARIABLES ========== */
 
     uint public override pid;
 
@@ -49,16 +44,12 @@ contract VaultFlipToFlip is VaultController, IStrategy {
 
     uint public cakeHarvested;
 
-    /* ========== MODIFIER ========== */
-
     modifier updateCakeHarvested {
         uint before = CAKE.balanceOf(address(this));
         _;
         uint _after = CAKE.balanceOf(address(this));
         cakeHarvested = cakeHarvested.add(_after).sub(before);
     }
-
-    /* ========== INITIALIZER ========== */
 
     function initialize(uint _pid, address _token) external initializer {
         __VaultController_init(IBEP20(_token));
@@ -69,8 +60,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         CAKE.safeApprove(address(zapBSC), uint(- 1));
         setMinter(0xC7EBF06A6188040B45fe95112Ff5557c36Ded7c0);
     }
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     function balance() public view override returns (uint amount) {
         (amount,) = CAKE_MASTER_CHEF.userInfo(pid, address(this));
@@ -113,8 +102,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         if (totalShares == 0) return 1e18;
         return balance().mul(1e18).div(totalShares);
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function deposit(uint _amount) public override {
         _depositTo(_amount, msg.sender);
@@ -179,7 +166,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         emit Withdrawn(msg.sender, amount, 0);
     }
 
-    // @dev underlying only + withdrawal fee + no perf fee
     function withdrawUnderlying(uint _amount) external {
         uint amount = Math.min(_amount, _principal[msg.sender]);
         uint shares = Math.min(amount.mul(totalShares).div(balance()), _shares[msg.sender]);
@@ -199,7 +185,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         emit Withdrawn(msg.sender, amount, withdrawalFee);
     }
 
-    // @dev profits only (underlying + bunny) + no withdraw fee + perf fee
     function getReward() external override {
         uint amount = earned(msg.sender);
         uint shares = Math.min(amount.mul(totalShares).div(balance()), _shares[msg.sender]);
@@ -218,8 +203,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         _stakingToken.safeTransfer(msg.sender, amount);
         emit ProfitPaid(msg.sender, amount, performanceFee);
     }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
 
     function _depositTo(uint _amount, address _to) private notPaused updateCakeHarvested {
         uint _pool = balance();
@@ -257,9 +240,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         }
     }
 
-    /* ========== SALVAGE PURPOSE ONLY ========== */
-
-    // @dev stakingToken must not remain balance in this contract. So dev should salvage staking token transferred by mistake.
     function recoverToken(address token, uint amount) external override onlyOwner {
         if (token == address(CAKE)) {
             uint cakeBalance = CAKE.balanceOf(address(this));
@@ -269,8 +249,6 @@ contract VaultFlipToFlip is VaultController, IStrategy {
         IBEP20(token).safeTransfer(owner(), amount);
         emit Recovered(token, amount);
     }
-
-    /* ========== MIGRATE CAKE V1 to V2 ========== */
 
     function migrate(address account, uint amount) public {
         if (amount == 0) return;
