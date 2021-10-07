@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -14,8 +13,6 @@ contract VaultVenusBridgeOwner is WhitelistUpgradeable {
     using SafeBEP20 for IBEP20;
     using SafeToken for address;
 
-    /* ========== CONSTANTS ============= */
-
     IPancakeRouter02 private constant PANCAKE_ROUTER = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     IVenusDistribution private constant VENUS_UNITROLLER = IVenusDistribution(0xfD36E2c2a6789Db23113685031d7F16329158384);
     VaultVenusBridge private constant VENUS_BRIDGE = VaultVenusBridge(0xc4C533935Bb64fA19968dE551899B7A4393174BC);
@@ -23,16 +20,12 @@ contract VaultVenusBridgeOwner is WhitelistUpgradeable {
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     IBEP20 private constant XVS = IBEP20(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
 
-    /* ========== INITIALIZER ========== */
-
     receive() external payable {}
 
     function initialize() external initializer {
         __WhitelistUpgradeable_init();
         XVS.safeApprove(address(PANCAKE_ROUTER), uint(- 1));
     }
-
-    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function addVaultBehalf(address vault, address token, address vToken) public onlyOwner {
         VENUS_BRIDGE.addVault(vault, token, vToken);
