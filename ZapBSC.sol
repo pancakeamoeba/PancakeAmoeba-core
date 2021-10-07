@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
 import "../library/SafeMath.sol";
@@ -14,8 +13,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
     using SafeMath for uint;
     using SafeBEP20 for IBEP20;
 
-    /* ========== CONSTANT VARIABLES ========== */
-
     address private constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
     address private constant AMV = 0x76383afd3C3501C2b0f5B4450E819eD430Ce4de0;
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
@@ -29,13 +26,9 @@ contract ZapBSC is IZap, OwnableUpgradeable {
 
     IPancakeRouter02 private constant ROUTER = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
 
-    /* ========== STATE VARIABLES ========== */
-
     mapping(address => bool) private notFlip;
     mapping(address => address) private routePairAddresses;
     address[] public tokens;
-
-    /* ========== INITIALIZER ========== */
 
     function initialize() external initializer {
         __Ownable_init();
@@ -57,9 +50,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
 
     receive() external payable {}
 
-
-    /* ========== View Functions ========== */
-
     function isFlip(address _address) public view returns (bool) {
         return !notFlip[_address];
     }
@@ -67,8 +57,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
     function routePair(address _address) external view returns(address) {
         return routePairAddresses[_address];
     }
-
-    /* ========== External Functions ========== */
 
     function zapInToken(address _from, uint amount, address _to) external override {
         IBEP20(_from).safeTransferFrom(msg.sender, address(this), amount);
@@ -79,7 +67,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
             address token0 = pair.token0();
             address token1 = pair.token1();
             if (_from == token0 || _from == token1) {
-                // swap half amount for other
                 address other = _from == token0 ? token1 : token0;
                 _approveTokenIfNeeded(other);
                 uint sellAmount = amount.div(2);
@@ -116,8 +103,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
         }
     }
 
-    /* ========== Private Functions ========== */
-
     function _approveTokenIfNeeded(address token) private {
         if (IBEP20(token).allowance(address(this), address(ROUTER)) == 0) {
             IBEP20(token).safeApprove(address(ROUTER), uint(- 1));
@@ -128,7 +113,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
         if (!isFlip(flip)) {
             _swapBNBForToken(flip, amount, receiver);
         } else {
-            // flip
             IPancakePair pair = IPancakePair(flip);
             address token0 = pair.token0();
             address token1 = pair.token1();
@@ -194,25 +178,20 @@ contract ZapBSC is IZap, OwnableUpgradeable {
 
         address[] memory path;
         if (intermediate != address(0) && (_from == WBNB || _to == WBNB)) {
-            // [WBNB, BUSD, VAI] or [VAI, BUSD, WBNB]
             path = new address[](3);
             path[0] = _from;
             path[1] = intermediate;
             path[2] = _to;
         } else if (intermediate != address(0) && (_from == intermediate || _to == intermediate)) {
-            // [VAI, BUSD] or [BUSD, VAI]
             path = new address[](2);
             path[0] = _from;
             path[1] = _to;
         } else if (intermediate != address(0) && routePairAddresses[_from] == routePairAddresses[_to]) {
-            // [VAI, DAI] or [VAI, USDC]
             path = new address[](3);
             path[0] = _from;
             path[1] = intermediate;
             path[2] = _to;
         } else if (routePairAddresses[_from] != address(0) && routePairAddresses[_to] != address(0) && routePairAddresses[_from] != routePairAddresses[_to]) {
-            // routePairAddresses[xToken] = xRoute
-            // [VAI, BUSD, WBNB, xRoute, xToken]
             path = new address[](5);
             path[0] = _from;
             path[1] = routePairAddresses[_from];
@@ -220,26 +199,22 @@ contract ZapBSC is IZap, OwnableUpgradeable {
             path[3] = routePairAddresses[_to];
             path[4] = _to;
         } else if (intermediate != address(0) && routePairAddresses[_from] != address(0)) {
-            // [VAI, BUSD, WBNB, AMV]
             path = new address[](4);
             path[0] = _from;
             path[1] = intermediate;
             path[2] = WBNB;
             path[3] = _to;
         } else if (intermediate != address(0) && routePairAddresses[_to] != address(0)) {
-            // [AMV, WBNB, BUSD, VAI]
             path = new address[](4);
             path[0] = _from;
             path[1] = WBNB;
             path[2] = intermediate;
             path[3] = _to;
         } else if (_from == WBNB || _to == WBNB) {
-            // [WBNB, AMV] or [AMV, WBNB]
             path = new address[](2);
             path[0] = _from;
             path[1] = _to;
         } else {
-            // [USDT, AMV] or [AMV, USDT]
             path = new address[](3);
             path[0] = _from;
             path[1] = WBNB;
@@ -249,8 +224,6 @@ contract ZapBSC is IZap, OwnableUpgradeable {
         uint[] memory amounts = ROUTER.swapExactTokensForTokens(amount, 0, path, receiver, block.timestamp);
         return amounts[amounts.length - 1];
     }
-
-    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function setRoutePairAddress(address asset, address route) public onlyOwner {
         routePairAddresses[asset] = route;
